@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <math.h>
+
+void sliding_window_flow_control(double transmission_time, double propagation_time, int max_packet_size, int bandwidth, int sequence_number_bits, int sender_window_size, int total_packets, int* packets_not_received) {
+    // Calculate round trip time
+    double round_trip_time = 2 * propagation_time + transmission_time;
+    
+    // Calculate maximum packets to transmit
+    double max_packets = bandwidth * round_trip_time / max_packet_size;
+    
+    // Calculate sender window
+    double sender_window = fmin(fmin(max_packets, pow(2, sequence_number_bits)), sender_window_size);
+    
+    printf("Sender Window Size: %.0f\n", sender_window);
+
+    // Simulate packet transmission and reception
+    int i;
+    for (i = 0; i < sender_window && i < total_packets; i++) {
+        // Simulate sending packet with sequence number i
+        printf("Sending packet with sequence number %d\n", i);
+        
+        // Simulate receiving packet with sequence number i
+        // In a real implementation, you would have to check for acknowledgment/receipt
+        // Here, we check if the packet should be marked as not received
+        if (packets_not_received[i])
+            printf("Packet with sequence number %d not received\n", i);
+        else
+            printf("Packet with sequence number %d received\n", i);
+    }
+
+    // Display packets that are not received
+    for (; i < total_packets; i++) {
+        if (packets_not_received[i])
+            printf("Packet with sequence number %d not received\n", i);
+    }
+}
+
+int main() {
+    // Example parameters
+    double transmission_time = 0.1; // in seconds
+    double propagation_time = 0.05; // in seconds
+    int max_packet_size = 1000; // in bits
+    int bandwidth = 1000000; // in bits per second
+    int sequence_number_bits = 10;
+    int sender_window_size = 20;
+    
+    // User input for total packets and which ones are not received
+    int total_packets;
+    printf("Enter the total number of packets: ");
+    scanf("%d", &total_packets);
+    int packets_not_received[total_packets];
+    printf("Enter 1 for packets not to be received, 0 otherwise:\n");
+    for (int i = 0; i < total_packets; i++) {
+        printf("Packet %d: ", i);
+        scanf("%d", &packets_not_received[i]);
+    }
+
+    // Perform sliding window flow control
+    sliding_window_flow_control(transmission_time, propagation_time, max_packet_size, bandwidth, sequence_number_bits, sender_window_size, total_packets, packets_not_received);
+    
+    return 0;
+}

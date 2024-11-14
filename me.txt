@@ -1,0 +1,442 @@
+Design menu driven application demonstrating use of different system calls.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <string.h>
+
+// Process-related system calls submenu
+void processRelatedCalls() {
+    int choice;
+    pid_t pid;
+    printf("\n-- Process Related System Calls --\n");
+    printf("1. fork()\n");
+    printf("2. exit()\n");
+    printf("3. wait()\n");
+    printf("Enter choice: ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            pid = fork();
+            if (pid == 0) {
+                printf("Child process (PID: %d)\n", getpid());
+                exit(0);
+            } else if (pid > 0) {
+                printf("Parent process (PID: %d)\n", getpid());
+            } else {
+                perror("fork failed");
+            }
+            break;
+        case 3:
+            pid = fork();
+            if (pid == 0) {
+                printf("Child process (PID: %d) exiting...\n", getpid());
+                exit(0);
+            } else if (pid > 0) {
+                wait(NULL);
+                printf("Parent process waited for child (PID: %d)\n", pid);
+            } else {
+                perror("fork failed");
+            }
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+}
+
+// File-related system calls submenu
+void fileRelatedCalls() {
+    int choice;
+    char filename[100], data[100];
+    printf("\n-- File Related System Calls --\n");
+    printf("1. open(), read(), write(), close()\n");
+    printf("2. link(), unlink()\n");
+    printf("3. stat()\n");
+    printf("Enter choice: ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1: {
+            printf("Enter filename: ");
+            scanf("%s", filename);
+            int fd = open(filename, O_CREAT | O_RDWR, 0666);
+            if (fd == -1) {
+                perror("Failed to open file");
+                return;
+            }
+            printf("Enter data to write: ");
+            scanf(" %[^\n]s", data);
+            write(fd, data, strlen(data));
+            lseek(fd, 0, SEEK_SET); // Reset file pointer for reading
+            read(fd, data, sizeof(data));
+            printf("Data read from file: %s\n", data);
+            close(fd);
+            break;
+        }
+        case 2:
+            printf("Enter filename for linking: ");
+            scanf("%s", filename);
+            if (link(filename, "hardlink") == 0) {
+                printf("Hard link created.\n");
+                unlink("hardlink");
+                printf("Hard link removed.\n");
+            } else {
+                perror("Linking failed");
+            }
+            break;
+        case 3:
+            printf("Enter filename for stat: ");
+            scanf("%s", filename);
+            struct stat fileStat;
+            if (stat(filename, &fileStat) == 0) {
+                printf("File Size: %ld bytes\n", fileStat.st_size);
+                printf("Number of Links: %ld\n", fileStat.st_nlink);
+                printf("File inode: %ld\n", fileStat.st_ino);
+            } else {
+                perror("stat failed");
+            }
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+}
+
+// Communication-related system calls submenu
+void communicationRelatedCalls() {
+    int choice;
+    printf("\n-- Communication Related System Calls --\n");
+    printf("1. pipe()\n");
+    printf("2. FIFO (mkfifo())\n");
+    printf("Enter choice: ");
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1: {
+            int pipefd[2];
+            char buf;
+            if (pipe(pipefd) == -1) {
+                perror("pipe failed");
+                return;
+            }
+            pid_t pid = fork();
+            if (pid == 0) {
+                close(pipefd[0]);
+                write(pipefd[1], "Hello, Parent!", 15);
+                close(pipefd[1]);
+                exit(0);
+            } else if (pid > 0) {
+                close(pipefd[1]);
+                read(pipefd[0], &buf, sizeof(buf));
+                printf("Parent read from pipe: %s\n", &buf);
+                close(pipefd[0]);
+                wait(NULL);
+            } else {
+                perror("fork failed");
+            }
+            break;
+        }
+        case 2:
+            // Implement mkfifo example if needed
+            printf("FIFO example not implemented.\n");
+            break;
+        default:
+            printf("Invalid choice.\n");
+    }
+}
+
+// Information-related system calls submenu
+void informationRelatedCalls() {
+    printf("\n-- Information Related System Calls --\n");
+    printf("Process ID: %d\n", getpid());
+    printf("Parent Process ID: %d\n", getppid());
+    printf("User ID: %d\n", getuid());
+    printf("Group ID: %d\n", getgid());
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("Current Working Directory: %s\n", cwd);
+    } else {
+        perror("getcwd failed");
+    }
+}
+
+int main() {
+    int choice;
+
+    while (1) {
+        printf("\n-- Menu --\n");
+        printf("1. Process Related System Calls\n");
+        printf("2. File Related System Calls\n");
+        printf("3. Communication Related System Calls\n");
+        printf("4. Information Related System Calls\n");
+        printf("5. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                processRelatedCalls();
+                break;
+            case 2:
+                fileRelatedCalls();
+                break;
+            case 3:
+                communicationRelatedCalls();
+                break;
+            case 4:
+                informationRelatedCalls();
+                break;
+            case 5:
+                printf("Exiting program...\n");
+                exit(0);
+            default:
+                printf("Invalid choice. Please enter a number between 1 and 5.\n");
+        }
+    }
+
+    return 0;
+}
+
+
+Implement multithreading for Matrix Operations using Pthreads.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define SIZE 3
+
+void print_matrix(int matrix[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%d ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    int A[SIZE][SIZE], B[SIZE][SIZE], sum[SIZE][SIZE], product[SIZE][SIZE];
+
+    // Initialize matrices A and B
+    printf("Enter elements of matrix A (%d x %d):\n", SIZE, SIZE);
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            scanf("%d", &A[i][j]);
+        }
+    }
+
+    printf("Enter elements of matrix B (%d x %d):\n", SIZE, SIZE);
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            scanf("%d", &B[i][j]);
+        }
+    }
+
+    // Matrix Addition
+    printf("\nMatrix Addition:\n");
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            sum[i][j] = A[i][j] + B[i][j];
+        }
+    }
+    // Print the result of addition
+    print_matrix(sum);
+
+    // Matrix Multiplication
+    printf("\nMatrix Multiplication:\n");
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            product[i][j] = 0;
+            for (int k = 0; k < SIZE; k++) {
+                product[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    // Print the result of multiplication
+    print_matrix(product);
+
+    return 0;
+}
+
+Reader-Writer Problem Using Threads and Mutex
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define MAX_READERS 5
+#define MAX_WRITERS 2
+
+int data = 80; // Shared data
+int read_count = 0;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void* reader(void* arg) {
+    int reader_id = *(int*)arg;
+
+    printf("Reader %d is trying to access critical region\n", reader_id);
+    pthread_mutex_lock(&mutex);
+    read_count++;
+    if (read_count == 1) {
+        pthread_mutex_lock(&write_mutex);
+    }
+    pthread_mutex_unlock(&mutex);
+
+    printf("Reader %d has got access to critical section\n", reader_id);
+    printf("Reader %d read data: %d\n", reader_id, data);
+
+    pthread_mutex_lock(&mutex);
+    read_count--;
+    if (read_count == 0) {
+        pthread_mutex_unlock(&write_mutex);
+    }
+    pthread_mutex_unlock(&mutex);
+
+    printf("Reader %d has left the critical section\n", reader_id);
+    return NULL;
+}
+
+void* writer(void* arg) {
+    int writer_id = *(int*)arg;
+
+    printf("Writer %d is trying to access critical region\n", writer_id);
+    pthread_mutex_lock(&write_mutex);
+
+    printf("Writer %d has got access to critical region\n", writer_id);
+    data = rand() % 100; // Simulate writing new data
+    printf("Writer %d wrote data: %d\n", writer_id, data);
+
+    pthread_mutex_unlock(&write_mutex);
+    printf("Writer %d has left the critical section\n", writer_id);
+    return NULL;
+}
+
+int main() {
+    pthread_t readers[MAX_READERS], writers[MAX_WRITERS];
+    int reader_ids[MAX_READERS], writer_ids[MAX_WRITERS];
+
+    for (int i = 0; i < MAX_READERS; i++) {
+        reader_ids[i] = i;
+        pthread_create(&readers[i], NULL, reader, &reader_ids[i]);
+    }
+
+    for (int i = 0; i < MAX_WRITERS; i++) {
+        writer_ids[i] = i;
+        pthread_create(&writers[i], NULL, writer, &writer_ids[i]);
+    }
+
+    for (int i = 0; i < MAX_READERS; i++) {
+        pthread_join(readers[i], NULL);
+    }
+    for (int i = 0; i < MAX_WRITERS; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
+    return 0;
+}
+
+input = ./reader_writer
+
+
+Reader-Writer Problem Using Threads and Semaphores
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define MAX_READERS 5
+#define MAX_WRITERS 2
+
+int data = 80; // Shared data
+sem_t read_mutex;
+sem_t write_mutex;
+int read_count = 0;
+
+void* reader(void* arg) {
+    int reader_id = *(int*)arg;
+
+    printf("Reader %d is trying to access critical region\n", reader_id);
+    sem_wait(&read_mutex); // Lock for reading
+    read_count++;
+    if (read_count == 1) {
+        sem_wait(&write_mutex); // First reader locks the writer
+    }
+    sem_post(&read_mutex); // Unlock the read_mutex
+
+    printf("Reader %d has got access to critical section\n", reader_id);
+    printf("Read Data: %d from Reader Number: %d\n", data, reader_id);
+
+    sem_wait(&read_mutex); // Lock for reading
+    read_count--;
+    if (read_count == 0) {
+        sem_post(&write_mutex); // Last reader unlocks the writer
+    }
+    sem_post(&read_mutex); // Unlock the read_mutex
+
+    printf("Reader %d has left the critical section\n", reader_id);
+    return NULL;
+}
+
+void* writer(void* arg) {
+    int writer_id = *(int*)arg;
+
+    printf("Writer %d is trying to access critical region\n", writer_id);
+    sem_wait(&write_mutex); // Lock for writing
+
+    printf("Writer %d has got access to critical section\n", writer_id);
+    data = rand() % 100; // Simulate writing new data
+    printf("Writer has wrote. Data Now: %d\n", data);
+
+    sem_post(&write_mutex); // Unlock the write_mutex
+    printf("Writer %d has left the critical section\n", writer_id);
+    return NULL;
+}
+
+int main() {
+    pthread_t readers[MAX_READERS], writers[MAX_WRITERS];
+    int reader_ids[MAX_READERS], writer_ids[MAX_WRITERS];
+
+    // Initialize semaphores
+    sem_init(&read_mutex, 0, 1);
+    sem_init(&write_mutex, 0, 1);
+
+    for (int i = 0; i < MAX_READERS; i++) {
+        reader_ids[i] = i;
+        pthread_create(&readers[i], NULL, reader, &reader_ids[i]);
+    }
+
+    for (int i = 0; i < MAX_WRITERS; i++) {
+        writer_ids[i] = i;
+        pthread_create(&writers[i], NULL, writer, &writer_ids[i]);
+    }
+
+    for (int i = 0; i < MAX_READERS; i++) {
+        pthread_join(readers[i], NULL);
+    }
+    for (int i = 0; i < MAX_WRITERS; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
+    // Destroy semaphores
+    sem_destroy(&read_mutex);
+    sem_destroy(&write_mutex);
+
+    return 0;
+}
+
+input = ./reader_writer
+
+
+
+
+
